@@ -32,6 +32,14 @@ export class TelegramMessageController {
             return await this.telegram.sendMessage(chatId, 'Please send a file.');
         }
 
+        const fileSize = get(file, "file_size", 0);  // Get the file size in bytes
+        const maxSize = 50 * 1024 * 1024; // 50 MB in bytes
+
+        // Check if the file size exceeds the allowed limit (50 MB)
+        if (fileSize > maxSize) {
+            return await this.telegram.sendMessage(chatId, `The file is too big. Max allowed size is 50 MB.`);
+        }
+
         // Get file information
         const fileId = get(file, "file_id", "");
         const fileName = get(file, "file_name", `file_${fileId}`); // Default file name if not available
