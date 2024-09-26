@@ -1,5 +1,5 @@
 import TelegramBot, {Message} from "node-telegram-bot-api";
-import {chunk, get, isEmpty} from "lodash";
+import {chunk, get, isArray, isEmpty} from "lodash";
 import * as fs from "node:fs";
 import {FileUtility} from "../utility/FileUtility";
 
@@ -79,8 +79,19 @@ export class TelegramMessageController {
             return await this.downloadFile(file, chatId, allowedExtensions);
         }
 
-        if (this.isUrl(chatText)) {
+        const links = chatText.split(",")
+
+        if (!isArray(links) && this.isUrl(chatText)) {
             return await this.downloadLink(chatText, chatId);
+        }
+
+        if (isArray(links)) {
+            for (const link of links) {
+                if (this.isUrl(link)) {
+                    await this.downloadLink(link, chatId);
+                }
+            }
+            return;
         }
 
 
