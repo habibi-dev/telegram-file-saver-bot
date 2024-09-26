@@ -89,6 +89,8 @@ export class TelegramMessageController {
             for (const link of links) {
                 if (this.isUrl(link)) {
                     await this.downloadLink(link, chatId);
+                }else{
+                    await this.telegram.sendMessage(chatId, 'Please send a file or link to this bot.', this.mainMenu);
                 }
             }
             return;
