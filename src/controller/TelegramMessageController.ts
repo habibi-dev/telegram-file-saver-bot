@@ -2,6 +2,7 @@ import TelegramBot, {Message} from "node-telegram-bot-api";
 import {chunk, get, isArray, isEmpty, trim} from "lodash";
 import * as fs from "node:fs";
 import {FileUtility} from "../utility/FileUtility";
+import {basename} from "node:path";
 
 export class TelegramMessageController {
     telegram: TelegramBot;
@@ -9,7 +10,8 @@ export class TelegramMessageController {
     folders = [];
     links: {
         link: string | TelegramBot.Document | TelegramBot.Voice | TelegramBot.PhotoSize,
-        chatID: TelegramBot.ChatId
+        chatID: TelegramBot.ChatId,
+        activeFolder: string
     }[] = [];
     downloadQueue: boolean = false;
     activeFolder: string = "";
@@ -89,7 +91,8 @@ export class TelegramMessageController {
     }
 
     private async addToDownload(link: any, chatID: number) {
-        this.links.push({link: this.isUrl(link) ? trim(link) : link, chatID});
+
+        this.links.push({link: this.isUrl(link) ? trim(link) : link, chatID, activeFolder: this.activeFolder});
 
         await this.telegram.sendMessage(chatID,
             `The link was added to the download list \n\n Queued links: ${this.links.length - 1} \n\n${this.getTimeStamp()}`,
@@ -103,13 +106,13 @@ export class TelegramMessageController {
 
         if (item === undefined) return;
 
-        const {link, chatID} = item;
+        const {link, chatID, activeFolder} = item;
 
         if (this.isUrl(link.toString())) {
-            return this.downloadLink(link.toString(), chatID)
+            return this.downloadLink(link.toString(), chatID, activeFolder)
         }
 
-        this.downloadFile(link as any, chatID)
+        this.downloadFile(link as any, chatID, activeFolder)
     }
 
     private async downloadFinish() {
@@ -123,7 +126,7 @@ export class TelegramMessageController {
         this.telegram.sendMessage(msg.chat.id, 'Welcome to the folder manager bot!', this.mainMenu);
     }
 
-    private async downloadLink(link: string, chatId: TelegramBot.ChatId) {
+    private async downloadLink(link: string, chatId: TelegramBot.ChatId, activeFolder: string) {
         const allowedExtensions = get(process, "env.ALLOWED_EXTENSIONS", "").split(",");
         const url = new URL(link);
         const fileName = FileUtility.sanitizeFileName(decodeURIComponent((url.pathname.split("/").pop())));
@@ -138,8 +141,8 @@ export class TelegramMessageController {
 
         try {
             // Download and save the file on the server
-            FileUtility.mkdir(this.path + this.activeFolder);
-            const filePath = this.path + this.activeFolder + this.getTimeStamp() + "_" + fileName;
+            FileUtility.mkdir(this.path + activeFolder);
+            const filePath = this.path + activeFolder + this.getTimeStamp() + "_" + fileName;
             const writer = fs.createWriteStream(filePath);
 
             await this.telegram.sendMessage(chatId, `Start download file ${fileName}  \n\n${this.getTimeStamp()}`, this.mainMenu);
@@ -155,7 +158,7 @@ export class TelegramMessageController {
         }
     }
 
-    private async downloadFile(file: TelegramBot.Document | TelegramBot.Voice | TelegramBot.PhotoSize, chatId: TelegramBot.ChatId) {
+    private async downloadFile(file: TelegramBot.Document | TelegramBot.Voice | TelegramBot.PhotoSize, chatId: TelegramBot.ChatId, activeFolder: string) {
         const allowedExtensions = get(process, "env.ALLOWED_EXTENSIONS", "").split(",");
         const fileSize = get(file, "file_size", 0);  // Get the file size in bytes
         const maxSize = 20 * 1024 * 1024; // 20 MB in bytes
@@ -183,8 +186,8 @@ export class TelegramMessageController {
             const fileLink = await this.telegram.getFileLink(fileId);
 
             // Download and save the file on the server
-            FileUtility.mkdir(this.path + this.activeFolder);
-            const filePath = this.path + this.activeFolder + this.getTimeStamp() + "_" + fileName;
+            FileUtility.mkdir(this.path + activeFolder);
+            const filePath = this.path + activeFolder + this.getTimeStamp() + "_" + fileName;
             const writer = fs.createWriteStream(filePath);
 
             await this.telegram.sendMessage(chatId, `Start download file ${fileName}  \n\n${this.getTimeStamp()}`, this.mainMenu);
@@ -201,13 +204,13 @@ export class TelegramMessageController {
     }
 
     async onDownloadSuccess(chatId: string, fileName: string) {
-        await this.telegram.sendMessage(chatId, `File successfully saved: ${fileName} \n\n${this.getTimeStamp()}`, this.mainMenu);
+        await this.telegram.sendMessage(chatId, `File successfully saved: ${fileName} \n\n Queued links: ${this.links.length} \n\n${this.getTimeStamp()}`, this.mainMenu);
         await this.downloadFinish();
     }
 
     async onDownloadError(chatId: string, filePath: string) {
         fs.unlinkSync(filePath);
-        await this.telegram.sendMessage(chatId, 'An error occurred while downloading the file.', this.mainMenu);
+        await this.telegram.sendMessage(chatId, 'An error occurred while downloading the file.\n\n File: ' + basename(filePath), this.mainMenu);
         await this.downloadFinish();
     }
 
