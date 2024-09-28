@@ -90,17 +90,22 @@ export class TelegramMessageController {
         if (!item) return;
 
         const {link, chatID, activeFolder} = item;
+
         if (this.isUrl(link.toString())) {
             await this.downloadLink(link.toString(), chatID, activeFolder);
         } else {
             await this.downloadFile(link as TelegramBot.Document | TelegramBot.Voice | TelegramBot.PhotoSize, chatID, activeFolder);
         }
 
+        const delay = parseInt(get(process, "env.DELAY_FOR_DOWNLOAD", "0"));
+        await new Promise(resolve => setTimeout(resolve, delay));
+
         this.downloadQueueActive = false;
         if (this.links.length > 0) {
             await this.processDownloadQueue();
         }
     }
+
 
     private async downloadLink(link: string, chatId: TelegramBot.ChatId, activeFolder: string) {
         const allowedExtensions = get(process, "env.ALLOWED_EXTENSIONS", "").split(",");
