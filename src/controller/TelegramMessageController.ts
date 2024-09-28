@@ -101,7 +101,7 @@ export class TelegramMessageController {
         this.downloadQueue = true;
         const item = this.links.shift();
 
-        if (!item) return;
+        if (item === undefined) return;
 
         const {link, chatID} = item;
 
