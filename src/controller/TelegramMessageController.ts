@@ -65,14 +65,14 @@ export class TelegramMessageController {
 
         if (file) {
             await this.addToDownload(file, chatId)
-            return await this.download();
+            return;
         }
 
         const links = chatText.split(",")
 
         if (!isArray(links) && this.isUrl(chatText)) {
             await this.addToDownload(chatText, chatId);
-            return await this.download();
+            return;
         }
 
         if (isArray(links)) {
@@ -83,7 +83,7 @@ export class TelegramMessageController {
                     await this.telegram.sendMessage(chatId, 'Please send a file or link to this bot.', this.mainMenu);
                 }
             }
-            return await this.download();
+            return;
         }
 
 
@@ -97,6 +97,10 @@ export class TelegramMessageController {
         await this.telegram.sendMessage(chatID,
             `The link was added to the download list \n\n Queued links: ${this.links.length - 1} \n\n${this.getTimeStamp()}`,
             this.mainMenu);
+
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        await this.download();
     }
 
     private download() {
@@ -204,14 +208,14 @@ export class TelegramMessageController {
     }
 
     async onDownloadSuccess(chatId: string, fileName: string) {
-        await this.telegram.sendMessage(chatId, `File successfully saved: ${fileName} \n\n Queued links: ${this.links.length} \n\n${this.getTimeStamp()}`, this.mainMenu);
         await this.downloadFinish();
+        await this.telegram.sendMessage(chatId, `File successfully saved: ${fileName} \n\n Queued links: ${this.links.length} \n\n${this.getTimeStamp()}`, this.mainMenu);
     }
 
     async onDownloadError(chatId: string, filePath: string) {
         fs.unlinkSync(filePath);
-        await this.telegram.sendMessage(chatId, 'An error occurred while downloading the file.\n\n File: ' + basename(filePath), this.mainMenu);
         await this.downloadFinish();
+        await this.telegram.sendMessage(chatId, 'An error occurred while downloading the file.\n\n File: ' + basename(filePath), this.mainMenu);
     }
 
     getTimeStamp() {
