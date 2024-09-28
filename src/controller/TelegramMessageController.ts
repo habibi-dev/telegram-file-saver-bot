@@ -109,7 +109,7 @@ export class TelegramMessageController {
         const {link, chatID, activeFolder} = item;
 
         if (this.isUrl(link.toString())) {
-            return this.downloadLink(link.toString(), chatID, activeFolder)
+            return this.downloadLink(trim(link.toString()), chatID, activeFolder)
         }
 
         this.downloadFile(link as any, chatID, activeFolder)
