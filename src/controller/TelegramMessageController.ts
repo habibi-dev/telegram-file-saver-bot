@@ -65,7 +65,7 @@ export class TelegramMessageController {
 
         if (file) {
             await this.addToDownload(file, chatId)
-            await this.download();
+            return await this.download();
         }
 
         const links = chatText.split(",")
