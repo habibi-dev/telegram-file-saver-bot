@@ -1,5 +1,5 @@
 import TelegramBot, {Message} from "node-telegram-bot-api";
-import {chunk, get, isArray, isEmpty, trim} from "lodash";
+import {chunk, get, isArray, isEmpty, isUndefined, trim} from "lodash";
 import * as fs from "node:fs";
 import {FileUtility} from "../utility/FileUtility";
 import {basename} from "node:path";
@@ -104,7 +104,7 @@ export class TelegramMessageController {
         this.downloadQueue = true;
         const item = this.links.shift();
 
-        if (item === undefined) return;
+        if (isUndefined(item)) return;
 
         const {link, chatID, activeFolder} = item;
 
@@ -227,7 +227,7 @@ export class TelegramMessageController {
     }
 
     private isUrl(s: string) {
-        const regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+        const regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@\-\/]))?/;
         return regexp.test(s);
     }
 
