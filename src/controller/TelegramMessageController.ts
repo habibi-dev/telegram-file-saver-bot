@@ -91,6 +91,8 @@ export class TelegramMessageController {
 
         const {link, chatID, activeFolder} = item;
 
+        await this.telegram.sendMessage(chatID, `Starting download... \nRemaining files in queue: ${this.links.length}`, this.mainMenu);
+
         if (this.isUrl(link.toString())) {
             await this.downloadLink(link.toString(), chatID, activeFolder);
         } else {
